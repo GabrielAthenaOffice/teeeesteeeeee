@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   // Porta real do backend-golang (backend-golang/.env => PORT).
-  const API_TARGET = env.VITE_API_PROXY_TARGET || 'http://localhost:8081'
+  const API_TARGET = env.VITE_API_PROXY_TARGET || 'http://localhost:8082'
 
   return {
     plugins: [react()],

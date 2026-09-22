@@ -15,7 +15,7 @@ npm install
 npm run dev                 # http://localhost:5173
 ```
 
-Em desenvolvimento o Vite faz proxy de `/api` e `/health` para `http://localhost:8080`
+Em desenvolvimento o Vite faz proxy de `/api` e `/health` para `http://localhost:8082`
 (definido em `vite.config.js`), então **não há CORS**. Para apontar para outra base,
 crie um `.env` a partir do `.env.example` com `VITE_API_BASE_URL`.
 
@@ -25,6 +25,10 @@ crie um `.env` a partir do `.env.example` com `VITE_API_BASE_URL`.
 | --- | --- | --- |
 | GET | `/api/v1/states` | Dashboard, select do topo, módulo **Estados**, select do módulo **Cidades** |
 | GET | `/api/v1/states/{ibgeCode}/cities?page&pageSize` | Painel de cidades do Dashboard e módulo **Cidades** (paginação) |
+| GET | `/api/v1/cities/{ibgeCode}` | Rota de detalhe `/cidades/:ibgeCode` |
+| GET | `/api/v1/dashboard/national` | Painel "Panorama nacional" do Dashboard |
+| GET | `/api/v1/dashboard/states` | Painel "UFs por indicador" do Dashboard |
+| GET | `/api/v1/dashboard/top-cities?limit` | Rankings do Dashboard (top PIB, renda e população) |
 | GET | `/health` | Chip de status no TopBar e painel "Status dos Serviços" |
 | GET | `/health/db` | Idem, informando se o Postgres responde |
 
@@ -33,7 +37,7 @@ crie um `.env` a partir do `.env.example` com `VITE_API_BASE_URL`.
 ```
 src/
   services/        # camada de API (padrões do backend: snake_case,
-                   # envelope {dados,pagina,tamanho,total}, erro em texto puro)
+                   # envelope {dados,pagina,tamanho,total}, erro em JSON {"error":{code,message}})
     api.js         # fetch base + ApiError + VITE_API_BASE_URL
     states.js      # GET /api/v1/states
     cities.js      # GET /api/v1/states/{ibge}/cities

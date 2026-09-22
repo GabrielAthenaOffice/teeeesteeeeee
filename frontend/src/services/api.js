@@ -5,7 +5,7 @@
  * - Base URL via VITE_API_BASE_URL; vazio = mesma origem (usa o proxy do Vite em dev, evita CORS).
  * - Sucesso em JSON com campos em snake_case (ibge_code, etc.).
  * - Paginação no envelope { dados, pagina, tamanho, total }.
- * - Erros via http.Error do Go => corpo em texto puro (não-JSON).
+ * - Erros em JSON {"error":{"code","message"}}; exceção: 405 em texto puro.
  */
 
 const RAW_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -52,9 +52,9 @@ export async function request(path, { signal } = {}) {
   const body = await readBody(response);
 
   if (!response.ok) {
-    const message = typeof body === 'string' && body
-      ? body
-      : `Erro ${response.status} na API`;
+    const apiMessage = typeof body?.error?.message === 'string' ? body.error.message : '';
+    const message = apiMessage
+      || (typeof body === 'string' && body ? body : `Erro ${response.status} na API`);
     throw new ApiError(message, { status: response.status, payload: body });
   }
 
