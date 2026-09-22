@@ -1,0 +1,11 @@
+package in
+
+import (
+	"context"
+
+	"github.com/CunhazadanoDale/trads-market-test/internal/core/domain"
+)
+
+type MetricsUseCase interface {
+	FindNational(ctx context.Context) (domain.NationalMetrics, error)
+}

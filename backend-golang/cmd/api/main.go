@@ -34,7 +34,10 @@ func main() {
 	cityRepository := postgres.NewCityRepository(db)
 	cityUseCase := usecases.NewCityUsecaseImpl(cityRepository, ibgeClient)
 
-	router := appRouter.NewRouter(db, stateUseCase, cityUseCase)
+	metricsRepository := postgres.NewMetricsRepository(db)
+	metricsUseCase := usecases.NewMetricsUseCaseImpl(metricsRepository)
+
+	router := appRouter.NewRouter(db, stateUseCase, cityUseCase, metricsUseCase)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
