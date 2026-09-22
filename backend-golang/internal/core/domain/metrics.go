@@ -14,3 +14,9 @@ type StateMetrics struct {
 	Income         *Indicator[float64]
 	GDP            *Indicator[float64]
 }
+
+type TopCities struct {
+	TopPopulation []CityDetail
+	TopIncome     []CityDetail
+	TopGDP        []CityDetail
+}

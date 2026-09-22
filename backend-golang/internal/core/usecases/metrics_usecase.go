@@ -31,3 +31,10 @@ func (m *MetricsUseCaseImpl) FindStates(
 ) ([]domain.StateMetrics, error) {
 	return m.repo.FindStates(ctx)
 }
+
+func (m *MetricsUseCaseImpl) FindTopCities(
+	ctx context.Context,
+	limit int,
+) (domain.TopCities, error) {
+	return m.repo.FindTopCities(ctx, limit)
+}

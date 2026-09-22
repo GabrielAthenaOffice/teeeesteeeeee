@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/CunhazadanoDale/trads-market-test/internal/adapter/http/dtos"
 	"github.com/CunhazadanoDale/trads-market-test/internal/core/ports/in"
@@ -58,4 +59,49 @@ func (h *MetricsHandler) FindStates(
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *MetricsHandler) FindTopCities(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	limit := 10
+
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			writeError(
+				w,
+				http.StatusBadRequest,
+				CodeInvalidRequest,
+				"limit deve ser um número inteiro",
+			)
+			return
+		}
+
+		if value < 1 || value > 100 {
+			writeError(
+				w,
+				http.StatusBadRequest,
+				CodeInvalidRequest,
+				"limit deve estar entre 1 e 100",
+			)
+			return
+		}
+
+		limit = value
+	}
+
+	top, err := h.useCase.FindTopCities(r.Context(), limit)
+	if err != nil {
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			CodeInternalError,
+			"falha ao buscar ranking de municípios",
+		)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dtos.NewTopCitiesResponse(top))
 }
