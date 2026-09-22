@@ -24,6 +24,8 @@ func NewRouter(
 	cityHandler := handler.NewCityHandler(cityUseCase)
 	mux.HandleFunc("GET /api/v1/states/{ibgeCode}/cities", cityHandler.FindByState)
 
+	mux.HandleFunc("GET /api/v1/cities/{ibgeCode}", cityHandler.FindByIBGECode)
+
 	mux.HandleFunc("GET /", handler.NotFoundHandler)
 
 	return mux

@@ -10,6 +10,7 @@ import (
 const (
 	CodeInvalidRequest = "invalid_request"
 	CodeStateNotFound  = "state_not_found"
+	CodeCityNotFound   = "city_not_found"
 	CodeNotFound       = "not_found"
 	CodeInternalError  = "internal_error"
 )

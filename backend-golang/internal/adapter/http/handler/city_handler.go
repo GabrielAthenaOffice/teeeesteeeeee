@@ -86,6 +86,49 @@ func (h *CityHandler) FindByState(
 	writeJSON(w, http.StatusOK, response)
 }
 
+func (h *CityHandler) FindByIBGECode(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	ibgeCode, err := strconv.ParseInt(
+		r.PathValue("ibgeCode"),
+		10,
+		64,
+	)
+	if err != nil {
+		writeError(
+			w,
+			http.StatusBadRequest,
+			CodeInvalidRequest,
+			"código IBGE do município inválido",
+		)
+		return
+	}
+
+	detail, err := h.useCase.FindByIBGECode(r.Context(), ibgeCode)
+	if err != nil {
+		if errors.Is(err, domain.ErrCityNotFound) {
+			writeError(
+				w,
+				http.StatusNotFound,
+				CodeCityNotFound,
+				fmt.Sprintf("município com código IBGE %d não encontrado", ibgeCode),
+			)
+			return
+		}
+
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			CodeInternalError,
+			"falha ao buscar município",
+		)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dtos.NewCityDetailResponse(detail))
+}
+
 func parseQueryInt(
 	r *http.Request,
 	name string,

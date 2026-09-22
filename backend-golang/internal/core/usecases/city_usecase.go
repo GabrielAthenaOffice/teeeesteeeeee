@@ -103,6 +103,18 @@ func (c *CityUsecaseImpl) FindByState(
 	}, nil
 }
 
+func (c *CityUsecaseImpl) FindByIBGECode(
+	ctx context.Context,
+	ibgeCode int64,
+) (domain.CityDetail, error) {
+	detail, err := c.repo.FindDetailByIBGECode(ctx, ibgeCode)
+	if err != nil {
+		return domain.CityDetail{}, fmt.Errorf("buscar cidade %d: %w", ibgeCode, err)
+	}
+
+	return *detail, nil
+}
+
 // normalizePaginacao aplica os limites de paginacao:
 // page < 1 → 1, size < 1 → 20, size > 100 → 100.
 func normalizePaginacao(filter domain.PaginacaoFilter) domain.PaginacaoFilter {

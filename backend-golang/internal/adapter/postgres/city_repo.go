@@ -2,10 +2,12 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/CunhazadanoDale/trads-market-test/internal/core/domain"
 	"github.com/CunhazadanoDale/trads-market-test/internal/core/ports/out"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -154,4 +156,130 @@ func (c *CityRepo) FindByState(
 	}
 
 	return cities, total, nil
+}
+
+func (c *CityRepo) FindDetailByIBGECode(ctx context.Context, ibgeCode int64) (*domain.CityDetail, error) {
+	const query = `
+		SELECT
+			c.id,
+			c.ibge_code,
+			c.name,
+			c.state_id,
+			s.id,
+			s.ibge_code,
+			s.name,
+			s.uf,
+			s.region
+		FROM cities c
+		INNER JOIN states s ON s.id = c.state_id
+		WHERE c.ibge_code = $1
+	`
+
+	var detail domain.CityDetail
+
+	if err := c.db.QueryRow(ctx, query, ibgeCode).Scan(
+		&detail.City.ID,
+		&detail.City.IBGECode,
+		&detail.City.Name,
+		&detail.City.StateID,
+		&detail.State.ID,
+		&detail.State.IBGECode,
+		&detail.State.Name,
+		&detail.State.UF,
+		&detail.State.Region,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrCityNotFound
+		}
+		return nil, fmt.Errorf("query city detail %d: %w", ibgeCode, err)
+	}
+
+	population, err := c.findPopulation(ctx, detail.City.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.Population = population
+
+	income, err := c.findIncome(ctx, detail.City.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.Income = income
+
+	gdp, err := c.findGDP(ctx, detail.City.ID)
+	if err != nil {
+		return nil, err
+	}
+	detail.GDP = gdp
+
+	return &detail, nil
+}
+
+func (c *CityRepo) findPopulation(ctx context.Context, cityID int64) (*domain.Indicator[int64], error) {
+	const query = `
+		SELECT year, value
+		FROM population_indicators
+		WHERE city_id = $1
+		ORDER BY year DESC
+		LIMIT 1
+	`
+
+	var year int
+	var value int64
+
+	err := c.db.QueryRow(ctx, query, cityID).Scan(&year, &value)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query population for city %d: %w", cityID, err)
+	}
+
+	return &domain.Indicator[int64]{Year: year, Value: value}, nil
+}
+
+func (c *CityRepo) findIncome(ctx context.Context, cityID int64) (*domain.Indicator[float64], error) {
+	const query = `
+		SELECT year, average_income
+		FROM income_indicators
+		WHERE city_id = $1
+		ORDER BY year DESC
+		LIMIT 1
+	`
+
+	var year int
+	var value float64
+
+	err := c.db.QueryRow(ctx, query, cityID).Scan(&year, &value)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query income for city %d: %w", cityID, err)
+	}
+
+	return &domain.Indicator[float64]{Year: year, Value: value}, nil
+}
+
+func (c *CityRepo) findGDP(ctx context.Context, cityID int64) (*domain.Indicator[float64], error) {
+	const query = `
+		SELECT year, gdp
+		FROM gdp_indicators
+		WHERE city_id = $1
+		ORDER BY year DESC
+		LIMIT 1
+	`
+
+	var year int
+	var value float64
+
+	err := c.db.QueryRow(ctx, query, cityID).Scan(&year, &value)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query GDP for city %d: %w", cityID, err)
+	}
+
+	return &domain.Indicator[float64]{Year: year, Value: value}, nil
 }
