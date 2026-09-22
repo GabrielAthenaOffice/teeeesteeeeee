@@ -40,10 +40,13 @@ src/
                    # envelope {dados,pagina,tamanho,total}, erro em JSON {"error":{code,message}})
     api.js         # fetch base + ApiError + VITE_API_BASE_URL
     states.js      # GET /api/v1/states
-    cities.js      # GET /api/v1/states/{ibge}/cities
+    cities.js      # GET /api/v1/states/{ibge}/cities e /cities/{code}
     health.js      # GET /health e /health/db com latência
+    dashboard.js   # GET /api/v1/dashboard/{national,states,top-cities}
   hooks/
     useApiResource.js  # loading/erro/recancelamento/reload para qualquer serviço
+  utils/
+    format.js      # formatação pt-BR de indicadores (null => "—")
   app/
     design-system/ # variáveis + estilos globais
     components/    # DataGrid, FilterPanel, Panel, StatusBadge, ApiStatus
@@ -51,7 +54,7 @@ src/
   modules/
     dashboard/     # cards + painéis (regiões, status, cidades, UFs)
     states/        # grid de estados com filtros (pesquisa/ região)
-    cities/        # grid de cidades com paginação vinda do backend
+    cities/        # grid de cidades (paginação do backend) + rota de detalhe
 ```
 
 ## Adicionando um módulo novo (ex.: indicators)

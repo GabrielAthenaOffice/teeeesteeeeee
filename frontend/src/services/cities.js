@@ -35,3 +35,7 @@ export async function getCities(stateIbgeCode, { page = 1, pageSize = DEFAULT_PA
     total: response?.total ?? 0,
   };
 }
+
+export function getCityDetail(ibgeCode, { signal } = {}) {
+  return api.get(`/api/v1/cities/${ibgeCode}`, { signal });
+}

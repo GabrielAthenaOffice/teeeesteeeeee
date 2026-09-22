@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './DataGrid.css';
 
-export function DataGrid({ columns, data, selectable = true }) {
+export function DataGrid({ columns, data, selectable = true, onRowClick }) {
   const [selectedRows, setSelectedRows] = useState(new Set());
 
   const handleSelectAll = (e) => {
@@ -53,10 +53,14 @@ export function DataGrid({ columns, data, selectable = true }) {
         </thead>
         <tbody>
           {data.map((row, rowIndex) => (
-            <tr 
-              key={rowIndex} 
+            <tr
+              key={rowIndex}
               className={selectedRows.has(rowIndex) ? 'selected' : ''}
-              onClick={() => selectable && handleSelectRow(rowIndex)}
+              style={onRowClick ? { cursor: 'pointer' } : undefined}
+              onClick={() => {
+                if (selectable) handleSelectRow(rowIndex);
+                onRowClick?.(row);
+              }}
             >
               {selectable && (
                 <td className="datagrid-checkbox" onClick={e => e.stopPropagation()}>

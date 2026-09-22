@@ -11,7 +11,9 @@ const MODULE_TITLES = {
 
 export function TopBar() {
   const location = useLocation();
-  const moduleTitle = MODULE_TITLES[location.pathname] ?? 'TRADS';
+  const moduleTitle =
+    MODULE_TITLES[location.pathname]
+    ?? (location.pathname.startsWith('/cidades/') ? 'Detalhe da cidade' : 'TRADS');
 
   return (
     <header className="topbar">

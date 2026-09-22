@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import '../shared.css';
 import { DataGrid } from '../../app/components/DataGrid';
@@ -7,9 +7,11 @@ import { FilterGroup, FilterPanel } from '../../app/components/FilterPanel';
 import { useApiResource } from '../../hooks/useApiResource';
 import { getStates } from '../../services/states';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, getCities } from '../../services/cities';
+import { formatGDP, formatIncome, formatPopulation } from '../../utils/format';
 
 export default function Cities() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const statesRes = useApiResource(getStates, []);
   const states = useMemo(() => statesRes.data ?? [], [statesRes.data]);
@@ -56,11 +58,29 @@ export default function Cities() {
     {
       label: 'Código IBGE',
       field: 'ibge_code',
-      width: '30%',
+      width: '14%',
       render: (value) => String(value),
     },
-    { label: 'Nome', field: 'name', width: '50%' },
-    { label: 'Estado', field: 'uf', width: '20%' },
+    { label: 'Nome', field: 'name', width: '26%' },
+    { label: 'Estado', field: 'uf', width: '6%' },
+    {
+      label: 'População',
+      field: 'indicators',
+      width: '18%',
+      render: (value) => formatPopulation(value?.population),
+    },
+    {
+      label: 'Renda média',
+      field: 'indicators',
+      width: '18%',
+      render: (value) => formatIncome(value?.income),
+    },
+    {
+      label: 'PIB (Mil R$)',
+      field: 'indicators',
+      width: '18%',
+      render: (value) => formatGDP(value?.gdp),
+    },
   ];
 
   const handleApply = () => citiesRes.reload();
@@ -104,7 +124,14 @@ export default function Cities() {
       );
     }
 
-    return <DataGrid columns={columns} data={rows} selectable={false} />;
+    return (
+      <DataGrid
+        columns={columns}
+        data={rows}
+        selectable={false}
+        onRowClick={(row) => navigate(`/cidades/${row.ibge_code}`, { state: { ibge: selected } })}
+      />
+    );
   };
 
   return (
