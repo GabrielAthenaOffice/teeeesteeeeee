@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, BarChart2, Map as MapIcon, MapPin, RefreshCw, Users, Wallet } from 'lucide-react';
+import { Activity, BarChart2, Map as MapIcon, MapPin, PieChart, RefreshCw, Users, Wallet } from 'lucide-react';
 import './Dashboard.css';
 import { DataGrid } from '../../app/components/DataGrid';
 import { Panel } from '../../app/components/Panel';
@@ -9,9 +9,9 @@ import { useApiResource } from '../../hooks/useApiResource';
 import { getStates } from '../../services/states';
 import { getCities } from '../../services/cities';
 import { getHealth } from '../../services/health';
-import { getNationalMetrics, getStateMetrics, getTopCities } from '../../services/dashboard';
+import { getAgeDistribution, getNationalMetrics, getStateMetrics, getTopCities } from '../../services/dashboard';
 import { API_BASE_URL } from '../../services/api';
-import { formatGDP, formatIncome, formatInteger, formatPopulation } from '../../utils/format';
+import { formatGDP, formatIncome, formatInteger, formatPercent, formatPopulation } from '../../utils/format';
 
 const CITIES_PANEL_SIZE = 8;
 
@@ -56,6 +56,7 @@ export default function Dashboard() {
   const nationalRes = useApiResource(getNationalMetrics, []);
   const stateMetricsRes = useApiResource(getStateMetrics, []);
   const topCitiesRes = useApiResource(getTopCities, []);
+  const ageRes = useApiResource(getAgeDistribution, []);
 
   const selectedState = useMemo(
     () => states.find((state) => String(state.ibge_code) === selectedIbge) ?? null,
@@ -193,6 +194,11 @@ export default function Dashboard() {
     },
   ];
 
+  const age = ageRes.data;
+  const ageGroups = useMemo(() => age?.grupos ?? [], [age]);
+  const maxAgePopulation =
+    ageGroups.length > 0 ? Math.max(...ageGroups.map((group) => group.populacao)) : 1;
+
   const handleRefresh = () => {
     statesRes.reload();
     healthRes.reload();
@@ -200,6 +206,7 @@ export default function Dashboard() {
     nationalRes.reload();
     stateMetricsRes.reload();
     topCitiesRes.reload();
+    ageRes.reload();
   };
 
   return (
@@ -385,6 +392,43 @@ export default function Dashboard() {
           </Panel>
         ))}
       </div>
+
+      <Panel title="Distribuição por faixa etária" icon={<PieChart size={16} />}>
+        {ageRes.loading && !age ? (
+          <div className="loading-box">Carregando faixa etária…</div>
+        ) : ageRes.error ? (
+          <div className="error-box">
+            {ageRes.error.message}
+            <button type="button" className="error-retry" onClick={ageRes.reload}>
+              Tentar novamente
+            </button>
+          </div>
+        ) : ageGroups.length === 0 ? (
+          <div className="loading-box">Sem dado de faixa etária.</div>
+        ) : (
+          <>
+            <ul className="age-list">
+              {ageGroups.map((group) => (
+                <li key={group.faixa} className="age-item">
+                  <span className="age-name" title={group.faixa}>{group.faixa}</span>
+                  <span className="age-bar">
+                    <span
+                      className="age-bar-fill"
+                      style={{ width: `${(group.populacao / maxAgePopulation) * 100}%` }}
+                    />
+                  </span>
+                  <span className="age-count">
+                    {formatInteger(group.populacao)} · {formatPercent((group.populacao / age.total) * 100)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="panel-hint">
+              Total {formatInteger(age.total)} pessoas · Censo {age.ano} · IBGE/SIDRA 9514
+            </p>
+          </>
+        )}
+      </Panel>
 
       <Panel title="UFs por indicador" icon={<MapIcon size={16} />}>
         {stateMetricsRes.loading && !stateMetrics ? (

@@ -61,6 +61,68 @@ func (m *MetricsRepo) FindNational(
 	return metrics, nil
 }
 
+func (m *MetricsRepo) FindAgeDistribution(
+	ctx context.Context,
+) (domain.AgeDistribution, error) {
+	const query = `
+		SELECT
+			year,
+			age_group,
+			SUM(population) AS population,
+			SUM(SUM(population)) OVER () AS total
+		FROM age_indicators
+		WHERE year = (SELECT MAX(year) FROM age_indicators)
+		GROUP BY year, age_group
+		ORDER BY CAST(SPLIT_PART(age_group, ' ', 1) AS int)
+	`
+
+	rows, err := m.db.Query(ctx, query)
+	if err != nil {
+		return domain.AgeDistribution{}, fmt.Errorf(
+			"query age distribution: %w",
+			err,
+		)
+	}
+	defer rows.Close()
+
+	distribution := domain.AgeDistribution{
+		Groups: make([]domain.AgeGroupMetrics, 0),
+	}
+
+	for rows.Next() {
+		var group domain.AgeGroupMetrics
+
+		if err := rows.Scan(
+			&distribution.Year,
+			&group.AgeGroup,
+			&group.Population,
+			&distribution.Total,
+		); err != nil {
+			return domain.AgeDistribution{}, fmt.Errorf(
+				"scan age distribution: %w",
+				err,
+			)
+		}
+
+		distribution.Groups = append(distribution.Groups, group)
+	}
+
+	if err := rows.Err(); err != nil {
+		return domain.AgeDistribution{}, fmt.Errorf(
+			"iterate age distribution: %w",
+			err,
+		)
+	}
+
+	if len(distribution.Groups) == 0 {
+		return domain.AgeDistribution{}, fmt.Errorf(
+			"age distribution is empty",
+		)
+	}
+
+	return distribution, nil
+}
+
 func (m *MetricsRepo) findPopulationTotal(
 	ctx context.Context,
 ) (*domain.Indicator[int64], error) {

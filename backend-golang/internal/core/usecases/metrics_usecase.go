@@ -38,3 +38,9 @@ func (m *MetricsUseCaseImpl) FindTopCities(
 ) (domain.TopCities, error) {
 	return m.repo.FindTopCities(ctx, limit)
 }
+
+func (m *MetricsUseCaseImpl) FindAgeDistribution(
+	ctx context.Context,
+) (domain.AgeDistribution, error) {
+	return m.repo.FindAgeDistribution(ctx)
+}

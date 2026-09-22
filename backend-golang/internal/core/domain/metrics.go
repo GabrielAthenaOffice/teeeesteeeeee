@@ -20,3 +20,14 @@ type TopCities struct {
 	TopIncome     []CityDetail
 	TopGDP        []CityDetail
 }
+
+type AgeDistribution struct {
+	Year   int
+	Total  int64
+	Groups []AgeGroupMetrics
+}
+
+type AgeGroupMetrics struct {
+	AgeGroup   string
+	Population int64
+}

@@ -22,7 +22,7 @@ docker compose up --build -d
 docker compose logs -f import
 ```
 
-O compose orquestra a cadeia **Postgres (saudável) → migrations → importador do IBGE (1ª execução, até 5 min) → API → frontend**. Quando o import terminar:
+O compose orquestra a cadeia **Postgres (saudável) → migrations → importador do IBGE (1ª execução, até 10 min) → API → frontend**. Quando o import terminar:
 
 | O quê | Onde |
 | --- | --- |
@@ -64,7 +64,7 @@ cd backend-golang
 go run ./cmd/import
 ```
 
-O importador busca estados, municípios e indicadores nas APIs oficiais e grava no banco (timeout interno de 5 minutos). Ao terminar, o banco tem **27 estados, 5.571 municípios** e os indicadores de população (Censo 2022), renda (2022) e PIB (2023). A partir daqui, **a API não bate no IBGE por requisição de usuário** — só no seu banco (requisito 3 do desafio).
+O importador busca estados, municípios e indicadores nas APIs oficiais e grava no banco (timeout interno de 12 minutos). Ao terminar, o banco tem **27 estados, 5.571 municípios** e os indicadores de população (Censo 2022), renda (2022), PIB (2023) e faixa etária (Censo 2022). A partir daqui, **a API não bate no IBGE por requisição de usuário** — só no seu banco (requisito 3 do desafio).
 
 ### 2.5 Suba a API
 
@@ -130,6 +130,7 @@ docker-compose.yml     # postgres, migrate, import, api, frontend, adminer
 | `/api/v1/dashboard/national` | agregado nacional (municípios + população/renda/PIB com ano) |
 | `/api/v1/dashboard/states` | os 27 estados com agregados |
 | `/api/v1/dashboard/top-cities?limit` | top PIB, renda e população numa resposta (limit 1–100) |
+| `/api/v1/dashboard/age` | distribuição nacional por faixa etária (21 grupos quinquenais, Censo 2022) |
 
 Erros seguem o contrato `{"error":{"code","message"}}` com códigos estáveis (`invalid_request`, `state_not_found`, `city_not_found`, `not_found`, `internal_error`); a única exceção é 405, que sai em texto puro do `net/http`.
 
@@ -149,9 +150,10 @@ Erros seguem o contrato `{"error":{"code","message"}}` com códigos estáveis (`
   | População | SIDRA 4709, variável 93 — "População residente" | 2022 (Censo) | Pessoas | tamanho do mercado por município/UF |
   | Renda média | SIDRA 10295, variável 13431 — "rendimento nominal médio mensal domiciliar per capita" | 2022 | Reais (máx. 2 decimais) | capacidade de compra para plano de saúde/vida/odonto |
   | PIB | SIDRA 5938, variável 37 — "PIB a preços correntes" | 2023 | **Mil Reais** (unidade oficial da variável) | dinamismo econômico regional |
+  | Faixa etária | SIDRA 9514, variável 93 — "População residente" (classificação Idade, 21 grupos quinquenais do nível 1) | 2022 (Censo) | Pessoas | responder "para qual público": distribuição etária, o que planos de saúde/vida/odonto mais pesam |
 
-  Os nomes/unidades acima foram lidos na resposta da própria API do SIDRA, não inferidos. **Faixa etária** é o indicador natural seguinte para "para qual público" (planos são sensíveis à idade) e está pendente — ver limitações.
-- **Validação por oráculo:** cada agregação foi conferida célula a célula contra consultas SQL independentes (Σ população = **203.080.756** = Censo 2022 nacional; renda ponderada recomposta = 1.638,60).
+  Os nomes/unidades acima foram lidos na resposta da própria API do SIDRA, não inferidos. **Faixa etária** fecha o "para qual público" (planos são sensíveis à idade): as 21 faixas quinquenais do Censo 2022 vêm da mesma fonte verificada. Células sem habitantes chegam como `"-"` no SIDRA; tratá-las como zero foi **provado**, não assumido — a soma das 21 faixas fecha exatamente a população oficial de cada cidade (caso de teste: Oliveira de Fátima/TO, duas faixas vazias, soma = 1.164).
+- **Validação por oráculo:** cada agregação foi conferida célula a célula contra consultas SQL independentes (Σ população = **203.080.756** = Censo 2022 nacional; renda ponderada recomposta = 1.638,60; soma das 21 faixas etárias = população oficial nas 5.570 cidades com dado, 0 divergências).
 
 ---
 
@@ -193,7 +195,7 @@ Além disso, o produto nunca teve nível territorial definido: o coletor fala em
 Descarte integral, como o desafio manda (sem continuar o PHP nem usar as ferramentas dele):
 
 - **Persistência real:** `cmd/import` grava em PostgreSQL com migrations, constraints (`CHECK/UNIQUE/FK`) e **ano + fonte por indicador** — o `INSERT` que não existia, existe; o `-1` e o duplicado são impossíveis de gravar.
-- **Fontes verificadas:** usamos os endpoints oficiais confirmados ao vivo (v1 de localidades; SIDRA 4709/93, 10295/13431, 5938/37) com ano e unidade corretos — nada de "v9" nem PIB confundido com renda.
+- **Fontes verificadas:** usamos os endpoints oficiais confirmados ao vivo (v1 de localidades; SIDRA 4709/93, 10295/13431, 5938/37, 9514/93) com ano e unidade corretos — nada de "v9" nem PIB confundido com renda.
 - **Qualidade conferida:** validação célula a célula contra oráculo SQL independente; Σ população = Censo 2022 (203.080.756). O município sem dado oficial (5101837, Boa Esperança do Norte/MT) vira `null` explícito na API e "—" na tela — não fantasma, não `-1`.
 - **Erros honestos:** contrato JSON com códigos estáveis, em vez de "sucesso" impresso sobre falha.
 - **Segredos fora do código:** `.env` gitignored (o oposto do `config.php` legado).
@@ -213,22 +215,21 @@ Descarte integral, como o desafio manda (sem continuar o PHP nem usar as ferrame
 | 2 | Integração com a API do IBGE | ✅ | `internal/adapter/ibge` (`cmd/import`) |
 | 3 | Banco próprio, sem bater no IBGE por request | ✅ | importador + API lendo só o Postgres |
 | 4 | Consultas e filtros | ✅ | paginação, filtro por UF, filtro/busca por região, rankings ordenados |
-| 5 | Dashboard com ≥2 visuais + filtros | ✅ | cards, barras por região, 3 rankings, tabela de UFs, 2 grids com filtros |
+| 5 | Dashboard com ≥2 visuais + filtros | ✅ | cards, barras por região, 3 rankings, barras de faixa etária, tabela de UFs, 2 grids com filtros |
 | 6 | Docker | ✅ | `docker compose up --build` sobe banco → migrations → import → API → frontend (nginx) sem instalar Go/Node — seção 2.1 |
 | 7 | README com decisões | ✅ | esta seção e as vizinhas |
 | 8 | Repo público com histórico | ✅ | 77+ commits incrementais |
 
-**Extras (além do obrigatório):** health checks de app e banco; contrato de erro rico com códigos; paginação com clamp (`pageSize` ≤ 100); read-model agregado 3-em-1 (`/dashboard/top-cities`); listagem de municípios já enriquecida com indicadores; rota de detalhe por município; formatação pt-BR com `Intl` e tratamento explícito de ausência (`null` → `—`); Adminer no compose; validação automatizada célula a célula contra SQL.
+**Extras (além do obrigatório):** health checks de app e banco; contrato de erro rico com códigos; paginação com clamp (`pageSize` ≤ 100); read-model agregado 3-em-1 (`/dashboard/top-cities`); listagem de municípios já enriquecida com indicadores; rota de detalhe por município; formatação pt-BR com `Intl` e tratamento explícito de ausência (`null` → `—`); Adminer no compose; validação automatizada célula a célula contra SQL; widget de distribuição nacional por faixa etária (21 grupos, SIDRA 9514).
 
 ---
 
 ## 7. Limitações conhecidas e o que faria com mais tempo
 
-- **Faixa etária (`age_indicators`):** tabela existe mas está vazia (nenhuma importação). Próximo passo: investigar no SIDRA a tabela, nível territorial (N6), período e unidade corretos → importar → widget de distribuição etária. É o indicador que mais responde "para qual público".
 - **Filtro "renda ≥ 2 salários mínimos":** não implementado (suposição não confirmada — seção 5.3). Com a confirmação da regra, vira filtro de renda mínima no grid de cidades.
 - **Busca por município:** decisão de escopo — não há busca textual de município; a navegação é por UF + paginação e pelo ranking. Com mais tempo: endpoint com `ILIKE`/índice e busca no frontend.
 - **Testes automatizados e CI:** ainda não existem. Próximo passo: testes dos use cases (para isso inverter a dependência `core → adapter`) e um GitHub Actions com `go vet/test` + `oxlint` + builds.
-- **Deploy:** não há link no ar; a ordem é terminar o Docker full-stack e então publicar (o README ganha o link).
+- **Deploy:** não há link no ar; o Docker full-stack está pronto (seção 2.1), então a ordem agora é só publicar e registrar o link aqui.
 - **Atualização agendada dos dados:** hoje o import é manual (`go run ./cmd/import`); com mais tempo, vira job agendado (cron/K8s) — os dados mudam por ano, não por hora.
 - **Autenticação:** não existe — decisão consciente (dados públicos do IBGE, API somente leitura). Se a API for exposta na internet, o mínimo é rate limit e CORS restrito.
 - **Dado ausente:** 5101837 (Boa Esperança do Norte/MT) não tem registro nas fontes consultadas para os três indicadores; a API devolve `null` e a UI mostra `—`, sem inventar número.

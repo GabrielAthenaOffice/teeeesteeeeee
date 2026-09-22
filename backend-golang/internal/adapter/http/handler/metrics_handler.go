@@ -38,6 +38,24 @@ func (h *MetricsHandler) FindNational(
 	writeJSON(w, http.StatusOK, dtos.NewNationalMetricsResponse(metrics))
 }
 
+func (h *MetricsHandler) FindAgeDistribution(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	distribution, err := h.useCase.FindAgeDistribution(r.Context())
+	if err != nil {
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			CodeInternalError,
+			"falha ao buscar distribuição por faixa etária",
+		)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dtos.NewAgeDistributionResponse(distribution))
+}
+
 func (h *MetricsHandler) FindStates(
 	w http.ResponseWriter,
 	r *http.Request,

@@ -16,7 +16,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
-		5*time.Minute,
+		12*time.Minute,
 	)
 	defer cancel()
 
@@ -74,6 +74,15 @@ func main() {
 	}
 
 	log.Println("GDP imported successfully")
+
+	ageRepository := postgres.NewAgeRepo(db)
+	ageUsecase := usecases.NewAgeUsecaseImpl(ageRepository, ibgeClient)
+
+	if err := ageUsecase.Import(ctx); err != nil {
+		log.Fatalf("falha ao importar faixa etária: %v", err)
+	}
+
+	log.Println("age imported successfully")
 
 	log.Println("IBGE import successfully")
 }

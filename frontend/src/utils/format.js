@@ -7,6 +7,8 @@ const currencyFormat = new Intl.NumberFormat('pt-BR', {
 
 const numberFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
 
+const percentFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+
 export function formatPopulation(indicator) {
   if (!indicator) return '—';
   return integerFormat.format(indicator.value);
@@ -25,4 +27,9 @@ export function formatIncome(indicator) {
 export function formatGDP(indicator) {
   if (!indicator) return '—';
   return numberFormat.format(indicator.value);
+}
+
+export function formatPercent(value) {
+  if (value == null) return '—';
+  return `${percentFormat.format(value)}%`;
 }

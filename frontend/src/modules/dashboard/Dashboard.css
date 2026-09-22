@@ -130,6 +130,49 @@
   font-variant-numeric: tabular-nums;
 }
 
+.age-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.age-item {
+  display: grid;
+  grid-template-columns: 130px 1fr 200px;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.age-name {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.age-bar {
+  height: 8px;
+  background-color: var(--neutral-bg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.age-bar-fill {
+  display: block;
+  height: 100%;
+  background-color: var(--primary);
+  border-radius: var(--radius-lg);
+}
+
+.age-count {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* Painel: status dos serviços */
 .service-list {
   list-style: none;

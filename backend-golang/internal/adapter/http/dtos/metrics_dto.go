@@ -32,6 +32,36 @@ func NewTopCitiesResponse(top domain.TopCities) TopCitiesResponse {
 	}
 }
 
+type AgeGroupResponse struct {
+	AgeGroup   string `json:"faixa"`
+	Population int64  `json:"populacao"`
+}
+
+type AgeDistributionResponse struct {
+	Year   int                `json:"ano"`
+	Total  int64              `json:"total"`
+	Groups []AgeGroupResponse `json:"grupos"`
+}
+
+func NewAgeDistributionResponse(
+	distribution domain.AgeDistribution,
+) AgeDistributionResponse {
+	groups := make([]AgeGroupResponse, 0, len(distribution.Groups))
+
+	for _, group := range distribution.Groups {
+		groups = append(groups, AgeGroupResponse{
+			AgeGroup:   group.AgeGroup,
+			Population: group.Population,
+		})
+	}
+
+	return AgeDistributionResponse{
+		Year:   distribution.Year,
+		Total:  distribution.Total,
+		Groups: groups,
+	}
+}
+
 func newCityDetailResponses(cities []domain.CityDetail) []CityDetailResponse {
 	responses := make([]CityDetailResponse, 0, len(cities))
 

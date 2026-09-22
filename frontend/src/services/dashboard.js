@@ -11,3 +11,7 @@ export function getStateMetrics({ signal } = {}) {
 export function getTopCities({ signal } = {}) {
   return api.get('/api/v1/dashboard/top-cities', { signal });
 }
+
+export function getAgeDistribution({ signal } = {}) {
+  return api.get('/api/v1/dashboard/age', { signal });
+}
