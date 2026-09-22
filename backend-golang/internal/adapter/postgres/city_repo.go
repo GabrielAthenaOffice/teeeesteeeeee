@@ -76,7 +76,7 @@ func (c *CityRepo) FindByState(
 	stateIBGECode int64,
 	page int,
 	pageSize int,
-) ([]domain.City, int, error) {
+) ([]domain.CityWithIndicators, int, error) {
 	const countQuery = `
 		SELECT COUNT(*)
 		FROM cities c
@@ -155,7 +155,156 @@ func (c *CityRepo) FindByState(
 		)
 	}
 
-	return cities, total, nil
+	if len(cities) == 0 {
+		return []domain.CityWithIndicators{}, total, nil
+	}
+
+	cityIDs := make([]int64, 0, len(cities))
+	for _, city := range cities {
+		cityIDs = append(cityIDs, city.ID)
+	}
+
+	populations, err := c.findPopulationsByCityIDs(ctx, cityIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	incomes, err := c.findIncomesByCityIDs(ctx, cityIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	gdps, err := c.findGDPsByCityIDs(ctx, cityIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]domain.CityWithIndicators, 0, len(cities))
+
+	for _, city := range cities {
+		result = append(result, domain.CityWithIndicators{
+			City:       city,
+			Population: populations[city.ID],
+			Income:     incomes[city.ID],
+			GDP:        gdps[city.ID],
+		})
+	}
+
+	return result, total, nil
+}
+
+func (c *CityRepo) findPopulationsByCityIDs(
+	ctx context.Context,
+	cityIDs []int64,
+) (map[int64]*domain.Indicator[int64], error) {
+	const query = `
+		SELECT DISTINCT ON (city_id) city_id, year, value
+		FROM population_indicators
+		WHERE city_id = ANY($1)
+		ORDER BY city_id, year DESC
+	`
+
+	rows, err := c.db.Query(ctx, query, cityIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query populations by city ids: %w", err)
+	}
+	defer rows.Close()
+
+	indicators := make(map[int64]*domain.Indicator[int64])
+
+	for rows.Next() {
+		var cityID int64
+		var year int
+		var value int64
+
+		if err := rows.Scan(&cityID, &year, &value); err != nil {
+			return nil, fmt.Errorf("scan population by city id: %w", err)
+		}
+
+		indicators[cityID] = &domain.Indicator[int64]{Year: year, Value: value}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate populations by city ids: %w", err)
+	}
+
+	return indicators, nil
+}
+
+func (c *CityRepo) findIncomesByCityIDs(
+	ctx context.Context,
+	cityIDs []int64,
+) (map[int64]*domain.Indicator[float64], error) {
+	const query = `
+		SELECT DISTINCT ON (city_id) city_id, year, average_income
+		FROM income_indicators
+		WHERE city_id = ANY($1)
+		ORDER BY city_id, year DESC
+	`
+
+	rows, err := c.db.Query(ctx, query, cityIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query incomes by city ids: %w", err)
+	}
+	defer rows.Close()
+
+	indicators := make(map[int64]*domain.Indicator[float64])
+
+	for rows.Next() {
+		var cityID int64
+		var year int
+		var value float64
+
+		if err := rows.Scan(&cityID, &year, &value); err != nil {
+			return nil, fmt.Errorf("scan income by city id: %w", err)
+		}
+
+		indicators[cityID] = &domain.Indicator[float64]{Year: year, Value: value}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate incomes by city ids: %w", err)
+	}
+
+	return indicators, nil
+}
+
+func (c *CityRepo) findGDPsByCityIDs(
+	ctx context.Context,
+	cityIDs []int64,
+) (map[int64]*domain.Indicator[float64], error) {
+	const query = `
+		SELECT DISTINCT ON (city_id) city_id, year, gdp
+		FROM gdp_indicators
+		WHERE city_id = ANY($1)
+		ORDER BY city_id, year DESC
+	`
+
+	rows, err := c.db.Query(ctx, query, cityIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query gdps by city ids: %w", err)
+	}
+	defer rows.Close()
+
+	indicators := make(map[int64]*domain.Indicator[float64])
+
+	for rows.Next() {
+		var cityID int64
+		var year int
+		var value float64
+
+		if err := rows.Scan(&cityID, &year, &value); err != nil {
+			return nil, fmt.Errorf("scan gdp by city id: %w", err)
+		}
+
+		indicators[cityID] = &domain.Indicator[float64]{Year: year, Value: value}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate gdps by city ids: %w", err)
+	}
+
+	return indicators, nil
 }
 
 func (c *CityRepo) FindDetailByIBGECode(ctx context.Context, ibgeCode int64) (*domain.CityDetail, error) {

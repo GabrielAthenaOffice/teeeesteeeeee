@@ -13,7 +13,7 @@ type CityRepository interface {
 		stateIBGECode int64,
 		page int,
 		pageSize int,
-	) ([]domain.City, int, error)
+	) ([]domain.CityWithIndicators, int, error)
 	StateExists(ctx context.Context, stateIBGECode int64) (bool, error)
 	FindDetailByIBGECode(ctx context.Context, ibgeCode int64) (*domain.CityDetail, error)
 }

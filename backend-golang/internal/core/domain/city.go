@@ -15,6 +15,13 @@ type CityDetail struct {
 	GDP        *Indicator[float64]
 }
 
+type CityWithIndicators struct {
+	City
+	Population *Indicator[int64]
+	Income     *Indicator[float64]
+	GDP        *Indicator[float64]
+}
+
 type Indicator[T any] struct {
 	Year  int
 	Value T

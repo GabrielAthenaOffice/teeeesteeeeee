@@ -3,16 +3,22 @@ package dtos
 import "github.com/CunhazadanoDale/trads-market-test/internal/core/domain"
 
 type CityResponse struct {
-	ID       int64  `json:"id"`
-	IBGECode int64  `json:"ibge_code"`
-	Name     string `json:"name"`
+	ID         int64              `json:"id"`
+	IBGECode   int64              `json:"ibge_code"`
+	Name       string             `json:"name"`
+	Indicators IndicatorsResponse `json:"indicators"`
 }
 
-func NewCityResponse(city domain.City) CityResponse {
+func NewCityResponse(city domain.CityWithIndicators) CityResponse {
 	return CityResponse{
 		ID:       city.ID,
 		IBGECode: city.IBGECode,
 		Name:     city.Name,
+		Indicators: IndicatorsResponse{
+			Population: newIndicatorResponse(city.Population),
+			Income:     newIndicatorResponse(city.Income),
+			GDP:        newIndicatorResponse(city.GDP),
+		},
 	}
 }
 

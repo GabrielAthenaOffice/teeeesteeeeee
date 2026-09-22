@@ -12,6 +12,6 @@ type CityUseCase interface {
 		ctx context.Context,
 		stateIBGECode int64,
 		filter domain.PaginacaoFilter,
-	) (domain.PaginacaoResponse[domain.City], error)
+	) (domain.PaginacaoResponse[domain.CityWithIndicators], error)
 	FindByIBGECode(ctx context.Context, ibgeCode int64) (domain.CityDetail, error)
 }
