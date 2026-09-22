@@ -44,6 +44,56 @@ services:
     networks:
       - trads-network
 
+  import:
+    build: ./backend-golang
+    image: trads-backend
+    container_name: trads-import
+    restart: "no"
+    command: ["import"]
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgres://trads:trads@postgres:5432/trads?sslmode=disable
+      - BASE_URL_IBGE=https://servicodados.ibge.gov.br/api/v3
+      - BASE_URL_LOCALIDADES=https://servicodados.ibge.gov.br/api/v1
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - trads-network
+
+  api:
+    build: ./backend-golang
+    image: trads-backend
+    container_name: trads-api
+    restart: unless-stopped
+    command: ["api"]
+    environment:
+      - PORT=8082
+      - APP_ENV=production
+      - DATABASE_URL=postgres://trads:trads@postgres:5432/trads?sslmode=disable
+      - BASE_URL_IBGE=https://servicodados.ibge.gov.br/api/v3
+      - BASE_URL_LOCALIDADES=https://servicodados.ibge.gov.br/api/v1
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      import:
+        condition: service_completed_successfully
+    networks:
+      - trads-network
+
+  frontend:
+    build: ./frontend
+    container_name: trads-frontend
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    depends_on:
+      - api
+    networks:
+      - trads-network
+
 
 volumes:
   postgres_data:
