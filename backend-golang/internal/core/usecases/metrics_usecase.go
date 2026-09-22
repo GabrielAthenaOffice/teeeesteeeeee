@@ -25,3 +25,9 @@ func (m *MetricsUseCaseImpl) FindNational(
 ) (domain.NationalMetrics, error) {
 	return m.repo.FindNational(ctx)
 }
+
+func (m *MetricsUseCaseImpl) FindStates(
+	ctx context.Context,
+) ([]domain.StateMetrics, error) {
+	return m.repo.FindStates(ctx)
+}

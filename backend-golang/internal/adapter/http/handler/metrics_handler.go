@@ -36,3 +36,26 @@ func (h *MetricsHandler) FindNational(
 
 	writeJSON(w, http.StatusOK, dtos.NewNationalMetricsResponse(metrics))
 }
+
+func (h *MetricsHandler) FindStates(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	metrics, err := h.useCase.FindStates(r.Context())
+	if err != nil {
+		writeError(
+			w,
+			http.StatusInternalServerError,
+			CodeInternalError,
+			"falha ao buscar métricas por estado",
+		)
+		return
+	}
+
+	response := make([]dtos.StateMetricsResponse, 0, len(metrics))
+	for _, item := range metrics {
+		response = append(response, dtos.NewStateMetricsResponse(item))
+	}
+
+	writeJSON(w, http.StatusOK, response)
+}

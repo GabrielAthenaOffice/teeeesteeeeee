@@ -8,4 +8,5 @@ import (
 
 type MetricsRepository interface {
 	FindNational(ctx context.Context) (domain.NationalMetrics, error)
+	FindStates(ctx context.Context) ([]domain.StateMetrics, error)
 }

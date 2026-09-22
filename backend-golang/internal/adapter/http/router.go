@@ -29,6 +29,7 @@ func NewRouter(
 
 	metricsHandler := handler.NewMetricsHandler(metricsUseCase)
 	mux.HandleFunc("GET /api/v1/dashboard/national", metricsHandler.FindNational)
+	mux.HandleFunc("GET /api/v1/dashboard/states", metricsHandler.FindStates)
 
 	mux.HandleFunc("GET /", handler.NotFoundHandler)
 

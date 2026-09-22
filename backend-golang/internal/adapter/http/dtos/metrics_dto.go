@@ -17,3 +17,21 @@ func NewNationalMetricsResponse(metrics domain.NationalMetrics) NationalMetricsR
 		},
 	}
 }
+
+type StateMetricsResponse struct {
+	StateResponse
+	Municipalities int64              `json:"municipios"`
+	Indicators     IndicatorsResponse `json:"indicators"`
+}
+
+func NewStateMetricsResponse(metrics domain.StateMetrics) StateMetricsResponse {
+	return StateMetricsResponse{
+		StateResponse:  NewStateResponse(metrics.State),
+		Municipalities: metrics.Municipalities,
+		Indicators: IndicatorsResponse{
+			Population: newIndicatorResponse(metrics.Population),
+			Income:     newIndicatorResponse(metrics.Income),
+			GDP:        newIndicatorResponse(metrics.GDP),
+		},
+	}
+}
