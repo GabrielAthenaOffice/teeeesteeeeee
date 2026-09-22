@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -14,40 +13,24 @@ type HealthResponse struct {
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
-
-	response := HealthResponse {
-		Status: "OK",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	writeJSON(w, http.StatusOK, HealthResponse{Status: "OK"})
 }
 
 func HealthHandlerWithDBCheck(db *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-		
+
 		if err := db.Ping(ctx); err != nil {
-			http.Error(w, "Database connection error", http.StatusInternalServerError)
+			writeError(
+				w,
+				http.StatusInternalServerError,
+				CodeInternalError,
+				"falha ao conectar com o banco de dados",
+			)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
-		response := HealthResponse{
-			Status: "OK",
-		}
-
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		writeJSON(w, http.StatusOK, HealthResponse{Status: "OK"})
 	}
 }

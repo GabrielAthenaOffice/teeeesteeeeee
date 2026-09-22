@@ -83,6 +83,18 @@ func (c *CityUsecaseImpl) FindByState(
 			fmt.Errorf("buscar cidades do estado %d: %w", stateIBGECode, err)
 	}
 
+	if total == 0 {
+		exists, err := c.repo.StateExists(ctx, stateIBGECode)
+		if err != nil {
+			return domain.PaginacaoResponse[domain.City]{},
+				fmt.Errorf("verificar estado %d: %w", stateIBGECode, err)
+		}
+
+		if !exists {
+			return domain.PaginacaoResponse[domain.City]{}, domain.ErrStateNotFound
+		}
+	}
+
 	return domain.PaginacaoResponse[domain.City]{
 		Dados: cities,
 		Page:  filter.Page,

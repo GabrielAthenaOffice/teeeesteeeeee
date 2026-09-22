@@ -14,4 +14,5 @@ type CityRepository interface {
 		page int,
 		pageSize int,
 	) ([]domain.City, int, error)
+	StateExists(ctx context.Context, stateIBGECode int64) (bool, error)
 }

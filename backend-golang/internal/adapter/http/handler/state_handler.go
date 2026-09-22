@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/CunhazadanoDale/trads-market-test/internal/adapter/http/dtos"
@@ -26,10 +25,11 @@ func (h *StateHandler) FindAll(
 ) {
 	states, err := h.useCase.FindAll(r.Context())
 	if err != nil {
-		http.Error(
+		writeError(
 			w,
-			"failed to find states",
 			http.StatusInternalServerError,
+			CodeInternalError,
+			"falha ao buscar estados",
 		)
 		return
 	}
@@ -39,10 +39,5 @@ func (h *StateHandler) FindAll(
 		response = append(response, dtos.NewStateResponse(state))
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		return
-	}
+	writeJSON(w, http.StatusOK, response)
 }

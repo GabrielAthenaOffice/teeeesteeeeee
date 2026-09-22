@@ -15,14 +15,16 @@ func NewRouter(
 ) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/health", handler.HealthHandler)
-	mux.HandleFunc("/health/db", handler.HealthHandlerWithDBCheck(db))
+	mux.HandleFunc("GET /health", handler.HealthHandler)
+	mux.HandleFunc("GET /health/db", handler.HealthHandlerWithDBCheck(db))
 
 	stateHandler := handler.NewStateHandler(stateUseCase)
 	mux.HandleFunc("GET /api/v1/states", stateHandler.FindAll)
 
 	cityHandler := handler.NewCityHandler(cityUseCase)
 	mux.HandleFunc("GET /api/v1/states/{ibgeCode}/cities", cityHandler.FindByState)
+
+	mux.HandleFunc("GET /", handler.NotFoundHandler)
 
 	return mux
 }

@@ -48,6 +48,26 @@ func (c *CityRepo) Upsert(ctx context.Context, city *domain.City, stateIBGECode 
 	return err
 }
 
+func (c *CityRepo) StateExists(ctx context.Context, stateIBGECode int64) (bool, error) {
+	const query = `SELECT EXISTS(SELECT 1 FROM states WHERE ibge_code = $1)`
+
+	var exists bool
+
+	if err := c.db.QueryRow(
+		ctx,
+		query,
+		stateIBGECode,
+	).Scan(&exists); err != nil {
+		return false, fmt.Errorf(
+			"check state %d: %w",
+			stateIBGECode,
+			err,
+		)
+	}
+
+	return exists, nil
+}
+
 // FindByState implements [out.CityRepository].
 func (c *CityRepo) FindByState(
 	ctx context.Context,
